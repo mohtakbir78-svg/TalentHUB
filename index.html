@@ -164,8 +164,9 @@ const ADMIN_PASS="admin123";
 const ADMIN_WA="6285185620148";
 
 let data=JSON.parse(localStorage.getItem("data"))||{
-FF:{name:"Free Fire",paket:[["100 Diamond",15000]]},
-ML:{name:"Mobile Legends",paket:[["86 Diamond",20000]]}
+FF:{name:"Free Fire",type:"id",paket:[["100 Diamond",15000]]},
+ML:{name:"Mobile Legends",type:"id",paket:[["86 Diamond",20000]]},
+TT:{name:"TheoTown",type:"acc",paket:[["100 Diamond",10000]]}
 };
 let orders=JSON.parse(localStorage.getItem("orders"))||[];
 
@@ -186,9 +187,26 @@ renderOrders();
 }
 
 function updateForm(){
-playerBox.innerHTML='<label>ID Player</label><input id="idplayer">';
+playerBox.innerHTML="";
 paket.innerHTML='<option value="">-- Pilih Paket --</option>';
-data[game.value].paket.forEach(p=>{
+let g=game.value;
+if(!g) return;
+
+if(data[g].type==="acc"){
+playerBox.innerHTML=`
+<label>Username</label>
+<input id="username">
+<label>Password</label>
+<input type="password" id="password">
+`;
+}else{
+playerBox.innerHTML=`
+<label>ID Player</label>
+<input id="idplayer">
+`;
+}
+
+data[g].paket.forEach(p=>{
 paket.innerHTML+=`<option value="${p[1]}">${p[0]}</option>`;
 });
 updateHarga();
@@ -199,12 +217,20 @@ totalHarga.innerText="Rp "+Number(paket.value||0).toLocaleString("id-ID");
 }
 
 function checkout(){
-if(!game.value||!paket.value||!payment.value||!idplayer.value)
-return alert("Lengkapi data");
+if(!game.value||!paket.value||!payment.value) return alert("Lengkapi data");
+
+let infoText="";
+if(data[game.value].type==="acc"){
+if(!username.value||!password.value) return alert("Isi Username & Password");
+infoText=`Username: ${username.value}\nPassword: ${password.value}`;
+}else{
+if(!idplayer.value) return alert("Isi ID Player");
+infoText=`ID Player: ${idplayer.value}`;
+}
 
 let order={
 game:game.options[game.selectedIndex].text,
-id:idplayer.value,
+info:infoText,
 paket:paket.options[paket.selectedIndex].text,
 total:totalHarga.innerText,
 pay:payment.value,
@@ -219,7 +245,7 @@ let msg=`Halo Admin TalentID
 
 Order Baru:
 Game: ${order.game}
-ID Player: ${order.id}
+${order.info}
 Paket: ${order.paket}
 Pembayaran: ${order.pay}
 Total: ${order.total}`;
@@ -234,7 +260,7 @@ else alert("Password salah");
 }
 
 function addGame(){
-data[newGameKey.value]={name:newGameName.value,paket:[]};
+data[newGameKey.value.toUpperCase()]={name:newGameName.value,type:"id",paket:[]};
 save();
 }
 
@@ -249,7 +275,7 @@ orders.forEach(o=>{
 orderHistory.innerHTML+=`
 <div class="orderItem">
 <b>${o.game}</b><br>
-ID: ${o.id}<br>
+${o.info.replace(/\n/g,"<br>")}<br>
 ${o.paket}<br>
 ${o.total} - ${o.pay}<br>
 <small>${o.time}</small>
@@ -261,7 +287,7 @@ function toggleAdmin(){
 adminWrap.classList.toggle("active");
 }
 
-/* 👆 SWIPE */
+/* SWIPE ADMIN PANEL */
 let startX=0;
 document.addEventListener("touchstart",e=>startX=e.touches[0].clientX);
 document.addEventListener("touchend",e=>{
