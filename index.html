@@ -25,7 +25,7 @@ header{
   margin-bottom:20px;
   box-shadow:0 10px 25px rgba(0,0,0,.3)
 }
-h2{color:#38bdf8;margin-top:0}
+h2,h3{color:#38bdf8;margin-top:0}
 label{display:block;margin-top:10px}
 input,select,button{
   width:100%;
@@ -48,36 +48,14 @@ hr{margin:15px 0;border:1px solid #1f2937}
   background:#ef4444;
   color:white;
 }
-
-/* ADMIN DASHBOARD FLOATING */
-#adminToggle{
-  position:fixed;
-  right:16px;
-  bottom:16px;
-  width:54px;
-  height:54px;
-  border-radius:50%;
-  background:#38bdf8;
-  color:#020617;
-  font-size:24px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:999;
-}
-#adminDashboard{
-  position:fixed;
-  top:0;
-  right:-100%;
-  width:320px;
-  height:100%;
+.orderItem{
   background:#020617;
-  padding:16px;
-  transition:.3s;
-  z-index:998;
-  overflow:auto;
+  border:1px solid #1f2937;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:8px;
+  font-size:14px;
 }
-#adminDashboard.active{right:0}
 </style>
 </head>
 
@@ -90,9 +68,9 @@ hr{margin:15px 0;border:1px solid #1f2937}
 
 <div class="container">
 
+<!-- FORM PEMBELIAN -->
 <div class="card">
 <h2>📝 Pembelian</h2>
-<p style="font-size:13px;color:#94a3b8">Semua order akan otomatis tersimpan</p>
 
 <label>Game</label>
 <select id="game" onchange="updateForm()"></select>
@@ -113,11 +91,9 @@ hr{margin:15px 0;border:1px solid #1f2937}
 <p>Total: <b id="totalHarga">Rp 0</b></p>
 <button onclick="checkout()">Lanjut</button>
 </div>
-</div>
 
-<button id="adminToggle" onclick="toggleAdmin()">⚙️</button>
-
-<div id="adminDashboard">
+<!-- ADMIN PANEL -->
+<div class="card">
 <h2>🔐 Admin Dashboard</h2>
 
 <input type="password" id="adminPass" placeholder="Password Admin">
@@ -127,7 +103,7 @@ hr{margin:15px 0;border:1px solid #1f2937}
 
 <hr>
 <h3>➕ Tambah Game</h3>
-<input id="newGameKey" placeholder="Kode Game (FF2)">
+<input id="newGameKey" placeholder="Kode Game (FF)">
 <input id="newGameName" placeholder="Nama Game">
 <button onclick="addGame()">Tambah Game</button>
 
@@ -144,155 +120,131 @@ hr{margin:15px 0;border:1px solid #1f2937}
 
 <hr>
 <h3>📜 Riwayat Order</h3>
-<div id="orderHistory" style="font-size:14px"></div>
+<div id="orderHistory"></div>
 
 </div>
+</div>
+
 </div>
 
 <script>
 const ADMIN_PASS="admin123";
-/* NOMOR ADMIN SUDAH DIPERBAIKI */
 const ADMIN_WA="6285185620148";
+
+let data = JSON.parse(localStorage.getItem("data")) || {
+FF:{name:"Free Fire",type:"id",paket:[["100 Diamond",15000]]},
+ML:{name:"Mobile Legends",type:"id",paket:[["86 Diamond",20000]]}
+};
 
 let orders = JSON.parse(localStorage.getItem("orders")) || [];
 
-let data = JSON.parse(localStorage.getItem("data")) || {
-FF:{name:"Free Fire",type:"id",paket:[["100 Diamond",15000],["310 Diamond",45000]]},
-TT:{name:"TheoTown",type:"acc",paket:[["100 Diamond",10000],["300 Diamond",28000]]},
-ML:{name:"Mobile Legends",type:"id",paket:[["86 Diamond",20000],["172 Diamond",38000]]}
-};
-
-function toggleAdmin(){
-  adminDashboard.classList.toggle("active");
-}
-
 function save(){
   localStorage.setItem("data",JSON.stringify(data));
+  localStorage.setItem("orders",JSON.stringify(orders));
   render();
-  renderOrders();
 }
 
 function render(){
-  game.innerHTML='<option value="">-- Pilih Game --</option>';
-  adminGame.innerHTML="";
-  for(let k in data){
-    game.innerHTML+=`<option value="${k}">${data[k].name}</option>`;
-    adminGame.innerHTML+=`<option value="${k}">${data[k].name}</option>`;
-  }
-  renderList();
+game.innerHTML='<option value="">-- Pilih Game --</option>';
+adminGame.innerHTML="";
+for(let k in data){
+game.innerHTML+=`<option value="${k}">${data[k].name}</option>`;
+adminGame.innerHTML+=`<option value="${k}">${data[k].name}</option>`;
+}
+renderList();
+renderOrders();
 }
 
 function updateForm(){
-  playerBox.innerHTML="";
-  paket.innerHTML='<option value="">-- Pilih Paket --</option>';
-  let g=game.value;
-  if(!g)return;
+playerBox.innerHTML="";
+paket.innerHTML='<option value="">-- Pilih Paket --</option>';
+let g=game.value;
+if(!g)return;
 
-  if(data[g].type==="acc"){
-    playerBox.innerHTML=`<label>Account</label><input id="account"><label>Password</label><input type="password" id="password">`;
-  }else{
-    playerBox.innerHTML=`<label>ID Player</label><input id="idplayer">`;
-  }
+playerBox.innerHTML=`<label>ID Player</label><input id="idplayer">`;
 
-  data[g].paket.forEach(p=>{
-    paket.innerHTML+=`<option value="${p[1]}">${p[0]}</option>`;
-  });
-  updateHarga();
+data[g].paket.forEach(p=>{
+paket.innerHTML+=`<option value="${p[1]}">${p[0]}</option>`;
+});
+updateHarga();
 }
 
 function updateHarga(){
-  totalHarga.innerText="Rp "+Number(paket.value||0).toLocaleString("id-ID");
+totalHarga.innerText="Rp "+Number(paket.value||0).toLocaleString("id-ID");
 }
 
 function checkout(){
-  if(!game.value||!paket.value||!payment.value)
-    return alert("Lengkapi data dulu");
+if(!game.value||!paket.value||!payment.value||!idplayer.value)
+return alert("Lengkapi data");
 
-  let info="";
-  if(document.getElementById("idplayer")){
-    if(!idplayer.value) return alert("Isi ID Player");
-    info="ID Player: "+idplayer.value;
-  }else{
-    if(!account.value||!password.value) return alert("Isi Account & Password");
-    info="Account: "+account.value;
-  }
+let order={
+time:new Date().toLocaleString("id-ID"),
+game:game.options[game.selectedIndex].text,
+id:idplayer.value,
+paket:paket.options[paket.selectedIndex].text,
+total:totalHarga.innerText,
+pay:payment.value
+};
 
-  let msg=`Halo Admin TalentID, saya mau order
+orders.unshift(order);
+save();
 
-Game: ${game.options[game.selectedIndex].text}
-${info}
-Paket: ${paket.options[paket.selectedIndex].text}
-Metode Pembayaran: ${payment.value}
-Total: ${totalHarga.innerText}`;
+let msg=`Halo Admin TalentID
 
-  orders.push({
-    game: game.options[game.selectedIndex].text,
-    info,
-    paket: paket.options[paket.selectedIndex].text,
-    bayar: payment.value,
-    total: totalHarga.innerText,
-    waktu: new Date().toLocaleString("id-ID")
-  });
-  localStorage.setItem("orders",JSON.stringify(orders));
-  renderOrders();
+Order Baru:
+Game: ${order.game}
+ID Player: ${order.id}
+Paket: ${order.paket}
+Pembayaran: ${order.pay}
+Total: ${order.total}`;
 
-  window.open("https://wa.me/"+ADMIN_WA+"?text="+encodeURIComponent(msg),"_blank");
+window.open("https://wa.me/"+ADMIN_WA+"?text="+encodeURIComponent(msg),"_blank");
 }
 
 function loginAdmin(){
-  if(adminPass.value===ADMIN_PASS)
-    adminPanel.style.display="block";
-  else alert("Password salah");
+if(adminPass.value===ADMIN_PASS)
+adminPanel.style.display="block";
+else alert("Password salah");
 }
 
 function addGame(){
-  let k=newGameKey.value.toUpperCase();
-  if(data[k])return alert("Game sudah ada");
-  data[k]={name:newGameName.value,type:"id",paket:[]};
-  save();
+let k=newGameKey.value.toUpperCase();
+data[k]={name:newGameName.value,type:"id",paket:[]};
+save();
 }
 
 function addDiamond(){
-  data[adminGame.value].paket.push([diamondName.value,Number(diamondPrice.value)]);
-  save();
-}
-
-function renderOrders(){
-  orderHistory.innerHTML="";
-  if(orders.length===0){
-    orderHistory.innerHTML="<i>Belum ada order</i>";
-    return;
-  }
-  orders.slice().reverse().forEach(o=>{
-    orderHistory.innerHTML+=`
-    <div style="border-bottom:1px solid #1f2937;padding:6px 0">
-      <b>${o.game}</b><br>
-      ${o.info}<br>
-      ${o.paket}<br>
-      ${o.bayar} • ${o.total}<br>
-      <span style="font-size:12px;color:#94a3b8">${o.waktu}</span>
-    </div>`;
-  });
+data[adminGame.value].paket.push([diamondName.value,Number(diamondPrice.value)]);
+save();
 }
 
 function renderList(){
-  listPaket.innerHTML="";
-  for(let g in data){
-    listPaket.innerHTML+=`<b>${data[g].name}</b><br>`;
-    data[g].paket.forEach((p,i)=>{
-      listPaket.innerHTML+=`${p[0]} - Rp ${p[1].toLocaleString("id-ID")}
-      <button class="smallBtn" onclick="del('${g}',${i})">X</button><br>`;
-    });
-  }
+listPaket.innerHTML="";
+for(let g in data){
+listPaket.innerHTML+=`<b>${data[g].name}</b><br>`;
+data[g].paket.forEach((p,i)=>{
+listPaket.innerHTML+=`${p[0]} - Rp ${p[1].toLocaleString("id-ID")}
+<button class="smallBtn" onclick="del('${g}',${i})">X</button><br>`;
+});
+}
 }
 
-function del(g,i){
-  data[g].paket.splice(i,1);
-  save();
+function renderOrders(){
+orderHistory.innerHTML="";
+orders.forEach(o=>{
+orderHistory.innerHTML+=`
+<div class="orderItem">
+<b>${o.game}</b><br>
+ID: ${o.id}<br>
+${o.paket}<br>
+${o.total} - ${o.pay}<br>
+<small>${o.time}</small>
+</div>`;
+});
 }
 
+function del(g,i){data[g].paket.splice(i,1);save();}
 render();
-renderOrders();
 </script>
 
 </body>
