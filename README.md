@@ -1,2 +1,0 @@
-# TalentHUB
-Shop games
